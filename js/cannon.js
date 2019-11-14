@@ -29,7 +29,7 @@ var l1on = true, l4on = true, l3on = true, l2on = true;
 
 function createSphere(obj,r,s){
     'use strict';
-    var texture = new THREE.TextureLoader().load( 'lena.jpg' );
+    var texture = new THREE.TextureLoader().load( 'js/lena.png' );
 
     material = new THREE.MeshBasicMaterial({map:texture,wireframe:false});
     geometry = new THREE.SphereGeometry(r,s,s);
@@ -39,12 +39,11 @@ function createSphere(obj,r,s){
 }   
 
 
-function createCube(obj,l,d,h){
+function createCube(obj,l,d,h,materials){
     'use strict';
-
+    
     geometry=new THREE.CubeGeometry(l,d,h);
-    material = new THREE.MeshBasicMaterial({color:'white',wireframe:false});
-    mesh=new THREE.Mesh(geometry,material);
+    mesh=new THREE.Mesh(geometry,new THREE.MeshFaceMaterial(materials));
 
     obj.add(mesh);
 
@@ -107,14 +106,34 @@ class Ball extends Entity{
 class Dice extends Entity{
     constructor(x,y,z,l){
         super(x,y,z);
-        createCube(this,l,l,l);
+        var texture = new THREE.TextureLoader();
+        var texts =  [];
+        var materials = [];
+        for(let i = 1; i<=6; i++){
+            texts[i-1] = texture.load('js/' + i +'.jpg');
+
+            materials.push(new THREE.MeshBasicMaterial({map: texts[i-1]}));
+        }
+        createCube(this,l,l,l,materials);
     }
 }
 
 class Board extends Entity{
     constructor(x,y,z,l,d,h){
         super(x,y,z);
-        createCube(this,l,d,h);
+        var texture = new THREE.TextureLoader();
+        var texts =  [];
+        var materials = [];
+        var wood = texture.load('js/wood.jpg');
+        var b = texture.load('js/board.png');
+        for(let i = 0; i<2; i++){
+            materials.push(new THREE.MeshBasicMaterial({map: wood}));
+        }
+        materials.push(new THREE.MeshBasicMaterial({map: b}));
+        for(let i = 3; i<6; i++){
+            materials.push(new THREE.MeshBasicMaterial({map: wood}));
+        }
+        createCube(this,l,d,h,materials);
     }
 }
 
