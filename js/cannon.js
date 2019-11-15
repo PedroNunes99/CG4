@@ -2,10 +2,11 @@
 
 var current_cam,cam1,cam2,scene, renderer;
 
+var next_cam = 1;
 var next_material = 1;
 
 
-var wire = true;
+var wire = false;
 
 
 
@@ -16,13 +17,23 @@ var start = Date.now(),delta;
 
 var objs = [];
 
-var edges = 60;
+var edges = 20;
 
 var aproxDepth = 80 ;
 
+var w = window.innerWidth,h = window.innerHeight;
 
 
 
+function createPause(x,y,z,w,h){
+    geometry = new THREE.PlaneGeometry( w, h, edges);
+    var texture = new THREE.TextureLoader().load( 'js/pause.jpeg' );
+    material = new THREE.MeshBasicMaterial( {map:texture,color:'white',side: THREE.DoubleSide} );
+    var plane = new THREE.Mesh( geometry, material );
+    plane.position.set(x,y,z);
+    plane.rotation.x = -Math.PI / 2;
+    scene.add( plane );
+}
 
 function createSphere(obj,x,y,z,r,s,material){
     'use strict';
@@ -61,7 +72,7 @@ function onResize() {
     }
     else {
         if (window.innerHeight > 0 && window.innerWidth > 0) {
-            var camFactor = 40;
+            var camFactor = 80 * ((window.innerHeight + window.innerWidth) / (w + h));
             
             current_cam.left = -window.innerWidth / camFactor;
             current_cam.right = window.innerWidth / camFactor;
@@ -91,43 +102,63 @@ class Entity extends THREE.Object3D{
 }
 var a;
 class Ball extends Entity{
-    constructor(x,y,z,r,d,acc,maxsp){
+    constructor(x,y,z,r,acc,maxsp){
         super(0,0,0);
         this.mats = []
-        a = new THREE.AxisHelper(10,10,10);
+        this.paused = false;
+        //a = new THREE.AxisHelper(10,10,10);
         
         var texture = new THREE.TextureLoader().load( 'js/lena.png' );
 
         this.mats.push(new THREE.MeshPhongMaterial({shininess : 120, map : texture}));
         this.mats.push(new THREE.MeshBasicMaterial({map : texture}));
+        this.mats.push(new THREE.MeshBasicMaterial({color:'pink',wireframe: true}));
 
         this.maxSpeed = maxsp;
         this.acc = acc;
-        this.angle = 0;
-        this.d = d;
-
+        
         this.initSpeed = 0;
 
 
         createSphere(this,x,y,z,r,edges,this.mats[0]);
-
+        //this.children[0].add(a);
     }
 
+    pause(){
+        this.paused = true;
+    }
+
+    resume(){
+        this.paused = false;
+    }
+
+    reset(){
+        this.acc = Math.sqrt(this.acc * this.acc);
+        this.rotation.y = 0;
+        this.rotation.z = 0;
+        this.rotation.x = 0;
+        this.children[0].rotation.x = 0;
+        this.children[0].rotation.y = 0;
+        this.children[0].rotation.z = 0;
+        this.initSpeed = 0;
+    }
     rotateAroundItself(delta){
-        this.initSpeed += this.acc * delta;
-        if (this.initSpeed > this.maxSpeed){
-            this.initSpeed = this.maxSpeed;
-        }
-        if (this.initSpeed < 0){
-            this.initSpeed = 0;
-        }
+        if(!this.paused){
+            this.initSpeed += this.acc * delta;
+            if (this.initSpeed > this.maxSpeed){
+                this.initSpeed = this.maxSpeed;
+            }
+            if (this.initSpeed < 0){
+                this.initSpeed = 0;
+            }
 
-        this.children[0].rotateX(-delta * this.initSpeed);
-        this.rotateY(delta * this.initSpeed * 0.7);
+            this.children[0].rotateX(-delta * this.initSpeed);
+            this.rotateY(delta * this.initSpeed * 0.7);
+        }
 
     }
 
-    // 0 - Phong , 1- Basic
+    // 0 - Phong , 1- Basic, 2 - wire
     changeMat(flag){
         this.children[0].material = this.mats[flag];
     }
@@ -143,6 +174,7 @@ class Dice extends Entity{
         var texts =  [];
         var materials1 = [];
         var materials2 = [];
+        this.paused = false;
 
         for(let i = 1; i<=6; i++){
             texts[i-1] = texture.load('js/' + i +'.jpg');
@@ -160,11 +192,26 @@ class Dice extends Entity{
             materials2.push(new THREE.MeshBasicMaterial({map: texts[i-1]}));
         }
         this.mats.push(new THREE.MeshFaceMaterial(materials2));
+        this.mats.push(new THREE.MeshBasicMaterial({color:'red',wireframe: true}));
         createCube(this,l,l,l,rx,ry,rz,this.mats[0]);
     }
 
+    pause(){
+        this.paused = true;
+    }
+
+    resume(){
+        this.paused = false;
+    }
+
+    reset(){
+        this.rotation.y = 0;
+    }
+
     rotate(delta){
-        this.rotation.y += delta*this.rotationalSpeed;
+        if(!this.paused){
+            this.rotation.y += delta*this.rotationalSpeed;
+        }
     }
     // 0 - Phong , 1- Basic
     changeMat(flag){
@@ -199,7 +246,7 @@ class Board extends Entity{
             materials2.push(new THREE.MeshBasicMaterial({map: wood}));
         }
         this.mat.push(new THREE.MeshFaceMaterial(materials2));
-
+        this.mat.push(new THREE.MeshBasicMaterial({color:'white',wireframe: true}));
         createCube(this,l,d,h,rx,ry,rz,this.mat[0]);
     }
 
@@ -207,6 +254,7 @@ class Board extends Entity{
      changeMat(flag){
         this.children[0].material = this.mat[flag];
     }
+    
 }
 
 
@@ -220,8 +268,8 @@ function createCamera1(){
     'use strict';
     cam1 = new THREE.OrthographicCamera( window.innerWidth / - aproxDepth, window.innerWidth / aproxDepth, window.innerHeight / aproxDepth, window.innerHeight / -aproxDepth, - 500, 1000);
 
-    cam1.position.set(-12.5,30,25);
-    cam1.lookAt(new THREE.Vector3(-12.5,30,0));
+    cam1.position.set(200,50,0);
+    cam1.lookAt(new THREE.Vector3(200,0,0));
 }
 
 function createCamera2(){
@@ -248,12 +296,12 @@ function createScene(){
 
     scene=new THREE.Scene();
 
-    axis = new THREE.AxisHelper(10,10,10);
-    scene.add(axis);
+    //axis = new THREE.AxisHelper(10,10,10);
+    //scene.add(axis);
 
     board = new Board(0,-8.2,0,0,0,0,60,5,60);
     dice = new Dice(0,0,0,7,Math.PI/4 - 0.15,0,Math.PI/4,2);
-    ball = new Ball(20,0,0,6,20,0.5,4);
+    ball = new Ball(20,0,0,6,0.5,4);
 
     dirLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
     dirLight.position.set(30,30,30);
@@ -264,6 +312,9 @@ function createScene(){
     pointLight = new THREE.PointLight( 0xffffff, 1, 100 );
     pointLight.position.set( 30, 30, 30 );
     scene.add( pointLight );
+
+    createPause(200,0,0,50,30);
+
     
     scene.add(board);
     scene.add(dice);
@@ -341,41 +392,81 @@ function animate() {
     time = delta - time;
     time/=1000;
 
-    //Key p pressed
-    if(keyp){
-        pointLight.visible = !pointLight.visible;
-        keyp = false;
+    if(next_cam == 1){
+        //Key p pressed
+        if(keyp){
+            pointLight.visible = !pointLight.visible;
+            keyp = false;
+        }
+        //Key d pressed
+        if(keyd){
+            dirLight.visible = !dirLight.visible;
+            keyd = false;
+        }
+        //Key l pressed
+        if(keyl){
+            if(!wire){
+                board.changeMat(next_material);
+                ball.changeMat(next_material);
+                dice.changeMat(next_material);
+                next_material = next_material == 0 ? 1 : 0;
+            }
+            keyl = false;
+        }
+        //Key r pressed
+        if(keyr){
+            ball.reset();
+            dice.reset();
+            keyr = false;
+        }
+        
+        //Key w pressed
+        if(keyw){
+            wire = !wire;
+            if(wire){
+                ball.changeMat(2);
+                dice.changeMat(2);
+                board.changeMat(2);
+            }
+            else{
+                ball.changeMat((next_material - 1) * -1);
+                dice.changeMat((next_material - 1) * -1);
+                board.changeMat((next_material - 1) * -1);
+            }
+            keyw = false;
+        }
+        //Key b is pressed
+        if(keyb){
+            keyb = false;
+            ball.acc *= -1;
+        }
     }
-    //Key d pressed
-    if(keyd){
-        dirLight.visible = !dirLight.visible;
+    else{
+        keyl = false;
+        keyp = false;
+        keyr = false;
+        keyw = false;
+        keyb = false;
         keyd = false;
     }
-    //Key l pressed
-    if(keyl){
-        board.changeMat(next_material);
-        ball.changeMat(next_material);
-        dice.changeMat(next_material);
-
-        next_material = next_material == 0 ? 1 : 0;
-        keyl = false;
-    }
-    //Key r pressed
-    if(keyr){
-        keyr = false;
-    }
+    
     //Key s pressed
     if(keys){
+        //Pause
+        if(next_cam == 1){
+            dice.pause();
+            ball.pause();
+            current_cam = cam1;
+        }
+        //Resume
+        else{
+            dice.resume();
+            ball.resume();
+            current_cam = cam2;
+        }
+        next_cam = next_cam == 0 ? 1 : 0;
+        
         keys = false;
-    }
-    //Key w pressed
-    if(keyw){
-        keyw = false;
-    }
-    //Key b is pressed
-    if(keyb){
-        keyb = false;
-        ball.acc *= -1;
     }
 
     dice.rotate(time);
