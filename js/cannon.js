@@ -141,6 +141,7 @@ class Ball extends Entity{
         this.children[0].rotation.y = 0;
         this.children[0].rotation.z = 0;
         this.initSpeed = 0;
+        this.changeMat(0);
     }
     rotateAroundItself(delta){
         if(!this.paused){
@@ -206,6 +207,7 @@ class Dice extends Entity{
 
     reset(){
         this.rotation.y = 0;
+        this.changeMat(0);
     }
 
     rotate(delta){
@@ -255,6 +257,9 @@ class Board extends Entity{
         this.children[0].material = this.mat[flag];
     }
     
+    reset(){
+        this.changeMat(0);
+    }
 }
 
 
@@ -392,6 +397,7 @@ function animate() {
     time = delta - time;
     time/=1000;
 
+    //Not Paused
     if(next_cam == 1){
         //Key p pressed
         if(keyp){
@@ -413,12 +419,7 @@ function animate() {
             }
             keyl = false;
         }
-        //Key r pressed
-        if(keyr){
-            ball.reset();
-            dice.reset();
-            keyr = false;
-        }
+    
         
         //Key w pressed
         if(keyw){
@@ -441,10 +442,21 @@ function animate() {
             ball.acc *= -1;
         }
     }
+    //Paused
     else{
+
+        if(keyr){
+            ball.reset();
+            dice.reset();
+            board.reset();
+            dirLight.visible = true;
+            pointLight.visible = true;
+            next_material = 1;
+            keyr = false;
+        }
+
         keyl = false;
         keyp = false;
-        keyr = false;
         keyw = false;
         keyb = false;
         keyd = false;
