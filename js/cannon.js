@@ -452,7 +452,6 @@ function animate() {
             dirLight.visible = true;
             pointLight.visible = true;
             next_material = 1;
-            keyr = false;
         }
 
         keyl = false;
@@ -461,7 +460,7 @@ function animate() {
         keyb = false;
         keyd = false;
     }
-    
+    keyr = false;
     //Key s pressed
     if(keys){
         //Pause
@@ -477,6 +476,7 @@ function animate() {
             current_cam = cam2;
         }
         next_cam = next_cam == 0 ? 1 : 0;
+        onResize();
         
         keys = false;
     }
